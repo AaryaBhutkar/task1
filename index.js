@@ -28,9 +28,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // Routes
 // Insert user
 app.post('/users', (req, res) => {
-    const { name, email } = req.body;
+    console.log("req",req);
+    console.log("req.body",req.body);
+    const {FirstName, LastName, MobileNo, Age, Latitude, Longitude, City, Address, SubLocality} = req.body;
+    console.log("req.body");
     try{
-    db.query('CALL insert_user(?, ?)', [name, email], (err, results) => {
+    db.query('CALL InsertEmployee(?)', [JSON.stringify(req.body)], (err, results) => {
         if (err) {
             throw err;
         }
@@ -43,11 +46,13 @@ app.post('/users', (req, res) => {
 
 // Get all users
 app.get('/users', (req, res) => {
+    const {employee_id} = req.body;
     try{
-    db.query('CALL get_users()', (err, results) => {
+    db.query('CALL GetEmployeeByID(?)',[JSON.stringify(req.body)], (err, results) => {
         if (err) {
-            throw err;
+            console.log(err);
         }
+        console.log(results[0][0].addresses)
         res.send(results[0]);
     });
     }catch(err){
@@ -56,10 +61,10 @@ app.get('/users', (req, res) => {
 });
 
 // Update user
-app.put('/users/:id', (req, res) => {
-    const { id } = req.params;
+app.put('/users', (req, res) => {
     const { name, email } = req.body;
-    db.query('CALL update_user(?, ?, ?)', [id, name, email], (err, results) => {
+    console.log(req.body);
+    db.query('CALL UpdateEmployee(?)', JSON.stringify(req.body), (err, results) => {
         if (err) {
             throw err;
         }
@@ -68,15 +73,25 @@ app.put('/users/:id', (req, res) => {
 });
 
 // Delete user
-app.delete('/users/:id', (req, res) => {
-    const { id } = req.params;
-    db.query('CALL delete_user(?)', [id], (err, results) => {
+app.delete('/users', (req, res) => {
+
+    const employeeId = req.body;
+
+    if (!employeeId) {
+        return res.status(400).send('Employee ID is required');
+    }
+
+    db.query('CALL DeleteEmployee(?)', [JSON.stringify(req.body)], (err, results) => {
         if (err) {
-            throw err;
+            console.error('Error executing stored procedure:', err);
+            return res.status(500).send('Error deleting user');
         }
         res.send('User deleted');
     });
 });
+
+
+
 
 // Start server
 app.listen(port, () => {
